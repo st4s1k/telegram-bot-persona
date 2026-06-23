@@ -30,13 +30,9 @@ export const demoTexts: PersonaTexts = {
   // Used when neither a reply nor the author yields a name.
   targetNameFallback: "friend",
   // The full /help reply — the pack curates its own command list (engine + persona).
+  // The engine renders its own base command list (help_engine); this is just the persona's ADDITION.
   helpText: [
-    "*Demo bot* — commands:",
-    "",
-    "*Engine:*",
-    "/help · /info · /config · /model · /memory · /summary · /rp · /stop · /resume",
-    "",
-    "*Demo persona:*",
+    "*Demo commands:*",
     "/dice `[N]` or `[min max]` — roll a die",
     "/energy `<0-5>` — set the bot's energy level (or show it)",
     "/joke `[topic]` — tell a short joke",
