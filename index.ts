@@ -8,7 +8,7 @@ import { demoTexts } from "./texts";
 import { demoCommands } from "./commands";
 import { demoQuickReplies } from "./quickReplies";
 import { demoThrows } from "./randomThrows";
-import { demoConfig } from "./config";
+import { demoConfig, demoConfigLocales } from "./config";
 import { demoPromptLines, demoInfoLines, demoAdminFlags } from "./state";
 
 setPersona({
@@ -24,6 +24,10 @@ setPersona({
       infoTitle: "ℹ️ **Статус Demo-бота**",
     },
   },
+  // Per-locale strings for the /config descriptions + group titles + preset descriptions (given as
+  // locale keys in config.ts). Merged into the engine i18n so they resolve through t() per cfg.lang —
+  // this is what makes the persona's /config panel localizable. Try `/config lang ru`.
+  locales: demoConfigLocales,
   commands: demoCommands,
   quickReplies: demoQuickReplies,
   randomThrows: demoThrows,
