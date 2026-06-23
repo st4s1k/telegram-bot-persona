@@ -1,0 +1,19 @@
+{
+  "persona_defaultVoice": "Ты Demo — дружелюбный и краткий собеседник. Будь тёплым, полезным и немного игривым, отвечай коротко.",
+  "persona_languageLine": "Отвечай на языке собеседника.",
+  "persona_fallbackError": "Упс — что-то пошло не так. Попробуй ещё раз чуть позже.",
+  "persona_fallbackNoCredits": "У меня закончились кредиты, извини!",
+  "persona_infoTitle": "ℹ️ **Статус Demo-бота**",
+  "demo_cfg_greet_back": "Здороваться в ответ на hi/hello",
+  "demo_cfg_yesno": "Подкалывать на сообщение yes/no",
+  "demo_cfg_factoid": "Иногда вбрасывать интересный факт",
+  "demo_cfg_greet_prob": "Шанс поздороваться в ответ",
+  "demo_cfg_factoid_prob": "Шанс вбросить факт",
+  "demo_cfg_dice_max": "Верхняя граница по умолчанию для /dice",
+  "demo_cfg_joke_style": "Стиль для /joke (напр. classic, pun, dad)",
+  "demo_grp_reactions": "⚡ Реакции",
+  "demo_grp_limits": "🎲 Шансы и лимиты",
+  "demo_grp_jokes": "😄 Шутки",
+  "demo_preset_quiet": "спокойный ассистент: без болтовни, долгая память включена",
+  "demo_preset_lively": "игривый: здоровается, подкалывает и вбрасывает факты"
+}

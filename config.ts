@@ -3,8 +3,8 @@
 // engine merges these with its own (CONFIG_SCHEMA / CONFIG_GROUPS / CONFIG_PRESETS = engine ∪ persona)
 // and mixes defaults(env) into getGlobalConfig. This example shows all four ConfigMeta types AND full
 // localization: descriptions / group titles / preset descriptions are LOCALE KEYS, resolved by the
-// engine via t(); the translations live in demoConfigLocales and are merged into the engine i18n by
-// index.ts (PersonaPack.locales). (A desc may also be a literal string — t() returns an unknown key
+// engine via t(); their translations live in the pack's i18n/<lang>.json (discovered + merged into the
+// engine i18n by the generate step). (A desc may also be a literal string — t() returns an unknown key
 // as-is — but keys make the /config panel localizable, which is the point of this example.)
 
 import type { ConfigContribution } from "../registry";
@@ -58,35 +58,5 @@ export const demoConfig: ConfigContribution = {
   },
 };
 
-// Translations for the config keys above — merged into the engine i18n by index.ts (PersonaPack.locales).
-// English is the base/fallback; `ru` shows the same panel localized (try `/config lang ru`).
-export const demoConfigLocales: Record<string, Record<string, string>> = {
-  en: {
-    demo_cfg_greet_back: "Greet back on hi/hello",
-    demo_cfg_yesno: "Quip on a yes/no message",
-    demo_cfg_factoid: "Occasionally drop a fun fact",
-    demo_cfg_greet_prob: "Chance to greet back",
-    demo_cfg_factoid_prob: "Chance to drop a fun fact",
-    demo_cfg_dice_max: "Default upper bound for /dice",
-    demo_cfg_joke_style: "Style passed to /joke (e.g. classic, pun, dad)",
-    demo_grp_reactions: "⚡ Reactions",
-    demo_grp_limits: "🎲 Chances & limits",
-    demo_grp_jokes: "😄 Jokes",
-    demo_preset_quiet: "calm assistant: no unprompted chatter, long-term memory on",
-    demo_preset_lively: "playful: greets, quips and fun facts on",
-  },
-  ru: {
-    demo_cfg_greet_back: "Здороваться в ответ на hi/hello",
-    demo_cfg_yesno: "Подкалывать на сообщение yes/no",
-    demo_cfg_factoid: "Иногда вбрасывать интересный факт",
-    demo_cfg_greet_prob: "Шанс поздороваться в ответ",
-    demo_cfg_factoid_prob: "Шанс вбросить факт",
-    demo_cfg_dice_max: "Верхняя граница по умолчанию для /dice",
-    demo_cfg_joke_style: "Стиль для /joke (напр. classic, pun, dad)",
-    demo_grp_reactions: "⚡ Реакции",
-    demo_grp_limits: "🎲 Шансы и лимиты",
-    demo_grp_jokes: "😄 Шутки",
-    demo_preset_quiet: "спокойный ассистент: без болтовни, долгая память включена",
-    demo_preset_lively: "игривый: здоровается, подкалывает и вбрасывает факты",
-  },
-};
+// The config strings (descriptions, group titles, preset descriptions) live in i18n/<lang>.json under
+// their keys (discovered + merged into the engine i18n). Try `/config lang ru` to see the panel localized.

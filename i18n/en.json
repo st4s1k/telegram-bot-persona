@@ -1,0 +1,26 @@
+{
+  "persona_defaultVoice": "You are Demo, a friendly and concise chat companion. Be warm, helpful and a little playful, and keep replies short.",
+  "persona_languageLine": "Reply in the same language the user writes in.",
+  "persona_fallbackError": "Oops — something went wrong. Try again in a moment.",
+  "persona_fallbackNoCredits": "I'm out of credits right now, sorry!",
+  "persona_targetNameFallback": "friend",
+  "persona_infoTitle": "ℹ️ **Demo bot status**",
+  "persona_helpText": [
+    "*Demo commands:*",
+    "/dice `[N]` or `[min max]` — roll a die",
+    "/energy `<0-5>` — set the bot's energy level (or show it)",
+    "/joke `[topic]` — tell a short joke"
+  ],
+  "demo_cfg_greet_back": "Greet back on hi/hello",
+  "demo_cfg_yesno": "Quip on a yes/no message",
+  "demo_cfg_factoid": "Occasionally drop a fun fact",
+  "demo_cfg_greet_prob": "Chance to greet back",
+  "demo_cfg_factoid_prob": "Chance to drop a fun fact",
+  "demo_cfg_dice_max": "Default upper bound for /dice",
+  "demo_cfg_joke_style": "Style passed to /joke (e.g. classic, pun, dad)",
+  "demo_grp_reactions": "⚡ Reactions",
+  "demo_grp_limits": "🎲 Chances & limits",
+  "demo_grp_jokes": "😄 Jokes",
+  "demo_preset_quiet": "calm assistant: no unprompted chatter, long-term memory on",
+  "demo_preset_lively": "playful: greets, quips and fun facts on"
+}

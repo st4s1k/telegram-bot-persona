@@ -1,33 +1,21 @@
 /* ================= DEMO PERSONA: registration ================= */
-// The single entry point: assemble the PersonaPack and register it via setPersona. The engine imports
-// this as a side-effect (src/persona/active.ts → import "./_pack") during isolate init, before the first
-// request — so the COMMANDS / CONFIG_SCHEMA / quick-reply / throw maps already see the pack.
+// The single entry point: assemble the PersonaPack and register it. The engine imports this as a
+// side-effect (src/persona/active.ts → import "./_pack") during isolate init. The pack's LOCALIZED
+// strings (voice, /help, fallbacks, /info title + /config descriptions/groups/presets) live in
+// i18n/<lang>.json — discovered + merged into the engine i18n by the generate step. Here we wire the
+// NON-localized identity (wake words, username aliases) + the behavior parts.
 
 import { setPersona } from "../registry";
-import { demoTexts } from "./texts";
+import { DEMO_WAKE_WORDS, DEMO_ALIASES } from "./texts";
 import { demoCommands } from "./commands";
 import { demoQuickReplies } from "./quickReplies";
 import { demoThrows } from "./randomThrows";
-import { demoConfig, demoConfigLocales } from "./config";
+import { demoConfig } from "./config";
 import { demoPromptLines, demoInfoLines, demoAdminFlags } from "./state";
 
 setPersona({
-  texts: demoTexts,
-  // Optional per-locale overrides (key = lang). `/config lang ru` selects this; any missing field falls
-  // back to `texts`. This lets one pack speak several languages independently of the engine UI language.
-  localeTexts: {
-    ru: {
-      defaultVoice: "Ты Demo — дружелюбный и краткий собеседник. Будь тёплым, полезным и немного игривым, отвечай коротко.",
-      languageLine: "Отвечай на языке собеседника.",
-      fallbackError: "Упс — что-то пошло не так. Попробуй ещё раз чуть позже.",
-      fallbackNoCredits: "У меня закончились кредиты, извини!",
-      infoTitle: "ℹ️ **Статус Demo-бота**",
-    },
-  },
-  // Per-locale strings for the /config descriptions + group titles + preset descriptions (given as
-  // locale keys in config.ts). Merged into the engine i18n so they resolve through t() per cfg.lang —
-  // this is what makes the persona's /config panel localizable. Try `/config lang ru`.
-  locales: demoConfigLocales,
+  wakeWords: DEMO_WAKE_WORDS,
+  usernameAliases: DEMO_ALIASES,
   commands: demoCommands,
   quickReplies: demoQuickReplies,
   randomThrows: demoThrows,
