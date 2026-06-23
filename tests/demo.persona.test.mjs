@@ -45,7 +45,8 @@ describe("demo persona · commands", () => {
   });
 
   test("/dice with min==max is deterministic", async () => {
-    const ctx = makeCtxFor(makeMsg({ text: "/dice 7 7" }), makeEnv());
+    // Displayed strings are localized (i18n/<lang>.json); pin BOT_LANG to assert exact wording.
+    const ctx = makeCtxFor(makeMsg({ text: "/dice 7 7" }), makeEnv({ BOT_LANG: "en" }));
     const out = await COMMANDS.dice(ctx, { argText: "7 7" });
     assert.match(out, /rolls \*\*7\*\*/);
     assert.match(out, /\(7.7\)/); // (7–7), dash-agnostic
@@ -62,7 +63,7 @@ describe("demo persona · commands", () => {
   });
 
   test("/energy rejects out-of-range input", async () => {
-    const ctx = makeCtxFor(makeMsg({ text: "/energy 9" }), makeEnv());
+    const ctx = makeCtxFor(makeMsg({ text: "/energy 9" }), makeEnv({ BOT_LANG: "en" }));
     assert.match(await COMMANDS.energy(ctx, { argText: "9" }), /0 to 5/);
   });
 });
@@ -70,7 +71,7 @@ describe("demo persona · commands", () => {
 describe("demo persona · state hooks", () => {
   test("buildInfoStatus shows the energy line from the infoLines hook", () => {
     const cd = { ...DEFAULT_CHAT_DATA(), personaState: { energy: 3 } };
-    const ctx = makeCtxFor(makeMsg(), makeEnv(), cd);
+    const ctx = makeCtxFor(makeMsg(), makeEnv({ BOT_LANG: "en" }), cd);
     const out = buildInfoStatus(ctx);
     assert.ok(out.includes("Energy"));
     assert.ok(out.includes("3/5"));

@@ -11,6 +11,7 @@
 // mode.argText is the text after the command word.
 
 import type { RegisteredCommand } from "../registry";
+import { t } from "../../i18n";
 import { getUserName } from "../../utils";
 import { updatePersonaState } from "../../storage";
 import { runLLMWithHistory } from "../../llm";
@@ -29,7 +30,7 @@ export const demoCommands: RegisteredCommand[] = [
       else if (nums.length >= 2) [min, max] = nums;
       if (min > max) [min, max] = [max, min];
       const roll = Math.floor(Math.random() * (max - min + 1)) + min;
-      return `🎲 ${getUserName(ctx.msg)} rolls **${roll}** (${min}–${max})`;
+      return t(ctx.cfg.lang, "demo_roll", getUserName(ctx.msg), roll, min, max);
     },
   },
 
@@ -40,11 +41,11 @@ export const demoCommands: RegisteredCommand[] = [
     state: demoStateSchema,
     handler: async (ctx, mode) => {
       const arg = (mode.argText || "").trim();
-      if (!arg) return `⚡ Energy: **${energyLevel(ctx)}/5**\nSet it with \`/energy 4\` (0–5).`;
+      if (!arg) return t(ctx.cfg.lang, "demo_energy_show", energyLevel(ctx));
       const n = parseInt(arg, 10);
-      if (!Number.isFinite(n) || n < 0 || n > 5) return "⚠️ Give a number from 0 to 5, e.g. `/energy 4`.";
+      if (!Number.isFinite(n) || n < 0 || n > 5) return t(ctx.cfg.lang, "demo_energy_err");
       updatePersonaState(ctx, { energy: n }); // shallow-merges into chatData.personaState, sets _dirty
-      return `⚡ Energy set to **${n}/5**.`;
+      return t(ctx.cfg.lang, "demo_energy_set", n);
     },
   },
 

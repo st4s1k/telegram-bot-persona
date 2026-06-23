@@ -43,7 +43,6 @@ export const demoConfig: ConfigContribution = {
       config: { random: true, answer_prob: 0.1, greet_back: true, yesno: true, factoid: true },
     },
   },
-  presetAliases: { "calm": "quiet", "serious": "quiet", "fun": "lively", "default": "lively" },
   // Defaults for the keys above. NOTE: this returns boolean | number only — so a STRING key like
   // `joke_style` is not defaulted here; its handler falls back at read-time (`ctx.cfg.joke_style || "classic"`).
   // Persona env is read via a cast — the engine's Env type does not name these variables (forkability).

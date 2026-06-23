@@ -7,6 +7,7 @@
 
 import type { Ctx } from "../../types";
 import type { PersonaStateField } from "../registry";
+import { t } from "../../i18n";
 import { ENERGY_TEXTS } from "./texts";
 
 // The /energy command's state slice. PersonaStateField supports "int" | "float" | "bool" | "string"
@@ -21,15 +22,16 @@ export function energyLevel(ctx: Ctx): number {
   return Number(ctx.chatData.personaState.energy) || 0;
 }
 
-// Hook: an extra line added to EVERY system prompt — flavor derived from the pack's own state.
+// Hook: an extra line added to EVERY system prompt — flavor derived from the pack's own state. This is
+// MODEL INPUT (not a displayed string), so the flavor stays inline rather than living in i18n.
 export function demoPromptLines(ctx: Ctx): string[] {
   const flavor = ENERGY_TEXTS[energyLevel(ctx)] || "";
   return flavor ? [`MOOD: ${flavor}`] : [];
 }
 
-// Hook: an extra line for /info, shown under the title (before the role).
+// Hook: an extra line for /info, shown under the title (before the role) — displayed, so it's from i18n.
 export function demoInfoLines(ctx: Ctx): string[] {
-  return [`⚡ Energy: **${energyLevel(ctx)}/5**`];
+  return [t(ctx.cfg.lang, "demo_info_energy", energyLevel(ctx))];
 }
 
 // Hook: a compact flag for /admin's per-chat listing (empty string → show nothing). Receives the parsed
