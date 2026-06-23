@@ -1,0 +1,5 @@
+# This pack is staged INTO an engine checkout; nothing here is built locally.
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
