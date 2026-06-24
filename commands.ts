@@ -12,7 +12,7 @@
 
 import type { RegisteredCommand } from "../registry";
 import { t } from "../../i18n";
-import { getUserName } from "../../utils";
+import { getUserName, chatAliases } from "../../utils";
 import { updatePersonaState } from "../../storage";
 import { runLLMWithHistory } from "../../llm";
 import { buildJokePrompt } from "./prompts";
@@ -30,7 +30,7 @@ export const demoCommands: RegisteredCommand[] = [
       else if (nums.length >= 2) [min, max] = nums;
       if (min > max) [min, max] = [max, min];
       const roll = Math.floor(Math.random() * (max - min + 1)) + min;
-      return t(ctx.cfg.lang, "demo_roll", getUserName(ctx.msg, ctx.cfg.lang), roll, min, max);
+      return t(ctx.cfg.lang, "demo_roll", getUserName(ctx.msg, ctx.cfg.lang, chatAliases(ctx)), roll, min, max);
     },
   },
 
