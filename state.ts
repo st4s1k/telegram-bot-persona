@@ -7,8 +7,7 @@
 
 import type { Ctx } from "../../types";
 import type { PersonaStateField } from "../registry";
-import { t } from "../../i18n";
-import { ENERGY_TEXTS } from "./texts";
+import { t, tList } from "../../i18n";
 
 // The /energy command's state slice. PersonaStateField supports "int" | "float" | "bool" | "string"
 // (with optional min/max for numbers). Add more fields, or more commands with their own slices, freely —
@@ -22,11 +21,12 @@ export function energyLevel(ctx: Ctx): number {
   return Number(ctx.chatData.personaState.energy) || 0;
 }
 
-// Hook: an extra line added to EVERY system prompt — flavor derived from the pack's own state. This is
-// MODEL INPUT (not a displayed string), so the flavor stays inline rather than living in i18n.
+// Hook: an extra line added to EVERY system prompt — flavor derived from the pack's own state. The flavor
+// is the per-level entry of `demo_energy_flavor` (indexed by level → tList, since t() would join it); the
+// `MOOD:` label is `demo_mood_line`. Both localized via i18n.
 export function demoPromptLines(ctx: Ctx): string[] {
-  const flavor = ENERGY_TEXTS[energyLevel(ctx)] || "";
-  return flavor ? [`MOOD: ${flavor}`] : [];
+  const flavor = tList(ctx.cfg.lang, "demo_energy_flavor")[energyLevel(ctx)] || "";
+  return flavor ? [t(ctx.cfg.lang, "demo_mood_line", flavor)] : [];
 }
 
 // Hook: an extra line for /info, shown under the title (before the role) — displayed, so it's from i18n.

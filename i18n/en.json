@@ -28,5 +28,18 @@
   "demo_energy_show": "⚡ Energy: **{0}/5**\nSet it with `/energy 4` (0–5).",
   "demo_energy_err": "⚠️ Give a number from 0 to 5, e.g. `/energy 4`.",
   "demo_energy_set": "⚡ Energy set to **{0}/5**.",
-  "demo_info_energy": "⚡ Energy: **{0}/5**"
+  "demo_info_energy": "⚡ Energy: **{0}/5**",
+
+  "demo_greet_responses": ["Hey there! 👋", "Hello! 🙂", "Hi!"],
+  "demo_yesno_yes": ["Absolutely! ✅", "For sure.", "Yep."],
+  "demo_yesno_no": ["No way. ❌", "Nope.", "Hard pass."],
+
+  "demo_joke_prompt": ["Tell ONE short, original, family-friendly joke.", "{0}", "Style: {1}.", "Reply with just the joke — no preamble, no explanation."],
+  "demo_joke_topic": "The joke should be about: \"{0}\".",
+  "demo_joke_topic_any": "Pick any wholesome everyday topic.",
+  "demo_joke_user_msg": "Joke about: {0}",
+  "demo_joke_user_msg_any": "Tell me a joke.",
+  "demo_mood_line": "MOOD: {0}",
+  "demo_energy_flavor": ["You feel sleepy and low-key — keep it mellow.", "You're calm and easygoing.", "You're in a normal, friendly mood.", "You're upbeat and chatty.", "You're very enthusiastic — lots of energy!", "You're at maximum hype — be exuberant (but still kind)."],
+  "demo_factoid_prompt": "Share ONE short, surprising, true fun fact — just the fact, one sentence."
 }

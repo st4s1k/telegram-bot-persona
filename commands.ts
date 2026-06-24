@@ -30,7 +30,7 @@ export const demoCommands: RegisteredCommand[] = [
       else if (nums.length >= 2) [min, max] = nums;
       if (min > max) [min, max] = [max, min];
       const roll = Math.floor(Math.random() * (max - min + 1)) + min;
-      return t(ctx.cfg.lang, "demo_roll", getUserName(ctx.msg), roll, min, max);
+      return t(ctx.cfg.lang, "demo_roll", getUserName(ctx.msg, ctx.cfg.lang), roll, min, max);
     },
   },
 
@@ -56,11 +56,13 @@ export const demoCommands: RegisteredCommand[] = [
     handler: async (ctx, mode) => {
       const topic = (mode.argText || "").trim(); // tip: getReplySource(ctx) from ../../vision can seed from a replied-to message
       const style = String(ctx.cfg.joke_style || "classic"); // a string /config key — see config.ts
+      // The synthetic user-turn fed to the model is localized too (it's stored into history).
+      const userMsg = topic ? t(ctx.cfg.lang, "demo_joke_user_msg", topic) : t(ctx.cfg.lang, "demo_joke_user_msg_any");
       return runLLMWithHistory(
         ctx.cfg,
         buildJokePrompt(topic, style, ctx),
         ctx.chatData.history,
-        topic ? `Joke about: ${topic}` : "Tell me a joke.",
+        userMsg,
         ctx.msg,
         { forceAppendUser: true, ctx },
       );
