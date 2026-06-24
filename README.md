@@ -35,13 +35,13 @@ To ship your own bot, fork this pack, edit the files below, and point a deployme
 
 | File | Contract part | Shows |
 |---|---|---|
-| `texts.ts` | non-localized identity + content | the wake-words array, the username-aliases map, and a pack-internal content array (`ENERGY_TEXTS`) |
-| `i18n/en.json` + `i18n/ru.json` | localized strings | the `persona_*` text fields (voice, `/help`, fallbacks, `/info` title) and the `demo_*` config + command strings — what makes the pack bilingual |
+| `texts.ts` | non-localized identity | the wake-words array (`DEMO_WAKE_WORDS`) and the username-aliases map (`DEMO_ALIASES`) — nothing else |
+| `i18n/en.json` + `i18n/ru.json` | localized strings | the `persona_*` text fields (voice, `/help`, fallbacks, `/info` title) and the `demo_*` strings — config, command/status output, quick-reply responses, prompt instructions, the energy flavor — i.e. **everything** the pack produces as text |
 | `index.ts` | `setPersona` | wiring all parts together (no `localeTexts` — localized strings live in `i18n/`) |
 | `commands.ts` | `RegisteredCommand[]` | a plain command (`/dice`, `skipHistory`), a **stateful** one (`/energy`, owns a `state` slice), and an **LLM** one (`/joke`, `llm`) |
-| `state.ts` | persona-state schema + hooks | a `PersonaStateField` (`int` 0–5) + `buildPromptLines`/`infoLines`/`adminFlags` |
-| `prompts.ts` | command prompt builder | layering instruction lines over the engine's `assemblePrompt` |
-| `quickReplies.ts` | `QuickReplyRule[]` | a `test`+`responses` rule (with `probKey`) and a `tokenTable` rule |
+| `state.ts` | persona-state schema + hooks | a `PersonaStateField` (`int` 0–5) + `buildPromptLines`/`infoLines`/`adminFlags`; the level-indexed flavor is `tList(lang, "demo_energy_flavor")[level]` |
+| `prompts.ts` | command prompt builder | layering instruction lines over the engine's `assemblePrompt` (instruction text from i18n via `t()`) |
+| `quickReplies.ts` | `QuickReplyRule[]` | a `test`+`responses` rule (with `probKey`) and a `tokenTable` rule — `responses` and the `tokenTable` values are **i18n keys** |
 | `randomThrows.ts` | `RandomThrowKind[]` | a weighted LLM "throw" |
 | `config.ts` | `ConfigContribution` | all four `ConfigMeta` types (bool/float/int/string), groups, presets, `defaults(env)` |
 | `tests/demo.persona.test.mjs` | — | how to test a pack against the engine harness |
@@ -56,18 +56,22 @@ hooks. Read state with `ctx.chatData.personaState`, write it with `updatePersona
 
 ### Localization
 
-The pack ships an **`i18n/` folder** (`en.json` + `ru.json`); every displayed string is **keyed** —
+The pack ships an **`i18n/` folder** (`en.json` + `ru.json`); every string the pack produces is **keyed** —
 `persona_*` for the `PersonaTexts` fields (voice, language line, fallbacks, `/info` title, `/help`),
-`demo_*` for the `/config` descriptions/group titles/preset descriptions and the command/status strings.
+`demo_*` for the `/config` descriptions/group titles/preset descriptions, the command/status strings, the
+quick-reply responses, the prompt instruction lines/seeds and the energy flavor.
 The engine **discovers** these files and merges them into its own i18n at the generate step. `/config lang ru|en`
 (or `/lang`) selects the language, validated against the discovered locales — an unknown code is rejected.
 A missing key falls back to English (the default). Adding a language = drop in `i18n/<code>.json`; no code change.
 
-**Which strings go where.** The pack's **displayed** output (`/dice`, the `/energy` show/error/set replies,
-the `/info` energy line) is localized via `t(ctx.cfg.lang, ...)` from `i18n/<lang>.json`. **Model-input**
-strings stay inline in code (the `prompts.ts` builder, the `/joke` user message, the `MOOD:` prompt line and
-the `ENERGY_TEXTS` flavor in `state.ts`) — the model is prompted in one base language, so there's nothing to
-localize there.
+**Which strings go where.** Everything localized lives in `i18n/<lang>.json` and resolves via `t()`/`tList()`:
+the displayed output (`/dice`, the `/energy` show/error/set replies, the `/info` energy line), the prompt
+instruction lines and seeds (the `/joke` prompt + synthetic user-turn, the `MOOD:` line, the energy flavor
+in `state.ts`, the factoid prompt), **and** the quick-reply responses (`demo_greet_responses`,
+`demo_yesno_yes`/`demo_yesno_no`). The only things that stay **inline** in code are the non-localized
+identity (`DEMO_WAKE_WORDS`/`DEMO_ALIASES`) and the **input-matching triggers** — the `hi|hello|hey` regex
+and the `yes`/`no` token *keys* of the `tokenTable` — because those match incoming messages, they are not
+output.
 
 ## Demo commands
 

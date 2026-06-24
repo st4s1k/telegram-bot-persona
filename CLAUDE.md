@@ -23,16 +23,19 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
 `texts`/`localeTexts` — the localized strings live in the pack's own `i18n/` folder. The parts:
 
 - **non-localized identity** (`texts.ts`) — `DEMO_WAKE_WORDS` (wake-words array) + `DEMO_ALIASES`
-  (username→display-name map). Also holds `ENERGY_TEXTS` (a pack-internal, level-indexed flavor array
-  consumed by `state.ts`).
+  (username→display-name map). Nothing else: the level-indexed energy flavor now lives in i18n under
+  `demo_energy_flavor`, read by `state.ts` via `tList(lang, "demo_energy_flavor")[level]`.
 - **localized strings** (`i18n/en.json` + `i18n/ru.json`) — the former `PersonaTexts` fields under
   `persona_*` keys (`persona_defaultVoice`, `persona_languageLine`, `persona_fallbackError`,
   `persona_fallbackNoCredits`, `persona_targetNameFallback`, `persona_infoTitle`, `persona_helpText`)
-  plus the `demo_*` config strings (`demo_cfg_*` descriptions, `demo_grp_*` group titles, `demo_preset_*`
-  preset descriptions) and the displayed command/status strings (`demo_roll`, `demo_energy_show`/`_err`/
-  `_set`, `demo_info_energy`). The engine **discovers + merges** these into its i18n at the generate step;
-  `getPersonaTexts(lang)` reads the `persona_*` keys and `t()` resolves the `demo_*` keys. A missing key
-  falls back to English (the default).
+  plus **every** `demo_*` string the pack produces: the config strings (`demo_cfg_*` descriptions,
+  `demo_grp_*` group titles, `demo_preset_*` preset descriptions), the displayed command/status strings
+  (`demo_roll`, `demo_energy_show`/`_err`/`_set`, `demo_info_energy`), the quick-reply responses
+  (`demo_greet_responses`, `demo_yesno_yes`/`_no`), and the prompt instructions/seeds (`demo_joke_prompt`,
+  `demo_joke_topic`/`_topic_any`, `demo_joke_user_msg`/`_msg_any`, `demo_mood_line`, the level-indexed
+  `demo_energy_flavor` array, `demo_factoid_prompt`). The engine **discovers + merges** these into its i18n
+  at the generate step; `getPersonaTexts(lang)` reads the `persona_*` keys and `t()`/`tList()` resolve the
+  `demo_*` keys. A missing key falls back to English (the default).
 - **`commands`** (`commands.ts`, `RegisteredCommand[]`) — `/dice` (plain, `skipHistory`), `/energy`
   (owns a `state` slice), `/joke` (`llm`). Fields: `type`, `defaultCmd`, `handler`, `llm`,
   `skipHistory`, `state`, optional `remoteAdmin`.
@@ -40,6 +43,9 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
   `buildPromptLines`/`infoLines`/`adminFlags` hooks. The engine merges the `state` slices of all
   commands into the `personaState` defaults and calls the hooks blind to their meaning.
 - **`quickReplies`** (`quickReplies.ts`) — a `test`+`responses` rule (with `probKey`) and a `tokenTable`.
+  `responses` and the `tokenTable` values are **i18n keys** (the engine's `tryQuickReply` resolves them per
+  `cfg.lang` via `tList` → `pickOne`); the `RE_HELLO` regex and the `yes`/`no` token *keys* stay inline
+  (input matching).
 - **`randomThrows`** (`randomThrows.ts`) — a weighted LLM throw.
 - **`config`** (`config.ts`, `ConfigContribution`) — schema (all four types), groups, presets (English
   keys `quiet`/`lively`, no aliases), `defaults(env)`.
@@ -51,14 +57,16 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
 - **`defaults(env)` returns `boolean | number` only.** A string config key (e.g. `joke_style`) cannot be
   defaulted there — default it at read-time in the handler (`ctx.cfg.joke_style || "classic"`).
 - **Order matters** for `commands`/`quickReplies`/`randomThrows` (regex/quick-reply priority, weighted
-  picks) and for any level-indexed content array (`ENERGY_TEXTS`).
+  picks) and for any level-indexed content array (the `demo_energy_flavor` i18n array, index = energy level).
 - **Env via cast.** Read pack env vars with `const e = env as unknown as Record<string, string | undefined>`.
   Command names are fixed (no env-based renaming).
-- **Displayed vs. model-input strings.** Anything **shown to the user** (the `/dice`, `/energy`
-  show/error/set replies, the `/info` energy line) is localized via `t(ctx.cfg.lang, ...)` from
-  `i18n/<lang>.json`. **Model-input** strings stay inline in code (the `prompts.ts` builder, the `/joke`
-  user message, the `MOOD:` prompt line + the `ENERGY_TEXTS` flavor) — the model is prompted in one base
-  language, nothing to localize.
+- **Everything localized is in i18n.** Every string the pack produces — displayed output (`/dice`,
+  `/energy` show/error/set, the `/info` energy line), the prompt instructions/seeds (the `prompts.ts`
+  builder, the `/joke` synthetic user-turn, the `MOOD:` line + the energy flavor, the factoid prompt) and
+  the quick-reply responses — is resolved via `t()`/`tList()` from `i18n/<lang>.json`. The only inline
+  strings are the non-localized identity (`DEMO_WAKE_WORDS`/`DEMO_ALIASES`) and the **input-matching
+  triggers** (the `RE_HELLO` regex, the `yes`/`no` `tokenTable` keys) — those match incoming messages, not
+  output.
 - **Fallback strings** live in `i18n/<lang>.json` under `persona_fallbackError`/`persona_fallbackNoCredits`,
   so the engine's `isFallbackMessage` keeps them out of history in any discovered language.
 
