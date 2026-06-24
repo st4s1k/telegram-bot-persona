@@ -24,7 +24,10 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
 
 - **non-localized identity** (`texts.ts`) — `DEMO_WAKE_WORDS` (wake-words array) + `DEMO_ALIASES`
   (username→display-name map). Nothing else: the level-indexed energy flavor now lives in i18n under
-  `demo_energy_flavor`, read by `state.ts` via `tList(lang, "demo_energy_flavor")[level]`.
+  `demo_energy_flavor`, read by `state.ts` via `tList(lang, "demo_energy_flavor")[level]`. `DEMO_ALIASES` is
+  the **pack-static** default; the engine's `/alias` command sets **per-chat** overrides (stored in the
+  reserved `chats.config.aliases` key) that the name resolvers merge **over** it — so `/dice`'s name
+  resolution passes `chatAliases(ctx)` (see below), and no pack code is needed for runtime aliases.
 - **localized strings** (`i18n/en.json` + `i18n/ru.json`) — the former `PersonaTexts` fields under
   `persona_*` keys (`persona_defaultVoice`, `persona_languageLine`, `persona_fallbackError`,
   `persona_fallbackNoCredits`, `persona_targetNameFallback`, `persona_infoTitle`, `persona_helpText`)
@@ -38,7 +41,9 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
   `demo_*` keys. A missing key falls back to English (the default).
 - **`commands`** (`commands.ts`, `RegisteredCommand[]`) — `/dice` (plain, `skipHistory`), `/energy`
   (owns a `state` slice), `/joke` (`llm`). Fields: `type`, `defaultCmd`, `handler`, `llm`,
-  `skipHistory`, `state`, optional `remoteAdmin`.
+  `skipHistory`, `state`, optional `remoteAdmin`. `/dice` resolves the roller's name via
+  `getUserName(ctx.msg, ctx.cfg.lang, chatAliases(ctx))` — passing `chatAliases(ctx)` (from `../../utils`)
+  so a per-chat `/alias` override is honored on top of `DEMO_ALIASES`.
 - **persona-state** (`state.ts`) — `demoStateSchema` (a `PersonaStateField`) + the
   `buildPromptLines`/`infoLines`/`adminFlags` hooks. The engine merges the `state` slices of all
   commands into the `personaState` defaults and calls the hooks blind to their meaning.

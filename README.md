@@ -35,7 +35,7 @@ To ship your own bot, fork this pack, edit the files below, and point a deployme
 
 | File | Contract part | Shows |
 |---|---|---|
-| `texts.ts` | non-localized identity | the wake-words array (`DEMO_WAKE_WORDS`) and the username-aliases map (`DEMO_ALIASES`) — nothing else |
+| `texts.ts` | non-localized identity | the wake-words array (`DEMO_WAKE_WORDS`) and the pack-static username-aliases map (`DEMO_ALIASES`) — nothing else (the engine's `/alias` layers per-chat overrides on top at runtime) |
 | `i18n/en.json` + `i18n/ru.json` | localized strings | the `persona_*` text fields (voice, `/help`, fallbacks, `/info` title) and the `demo_*` strings — config, command/status output, quick-reply responses, prompt instructions, the energy flavor — i.e. **everything** the pack produces as text |
 | `index.ts` | `setPersona` | wiring all parts together (no `localeTexts` — localized strings live in `i18n/`) |
 | `commands.ts` | `RegisteredCommand[]` | a plain command (`/dice`, `skipHistory`), a **stateful** one (`/energy`, owns a `state` slice), and an **LLM** one (`/joke`, `llm`) |
@@ -73,6 +73,12 @@ identity (`DEMO_WAKE_WORDS`/`DEMO_ALIASES`) and the **input-matching triggers** 
 and the `yes`/`no` token *keys* of the `tokenTable` — because those match incoming messages, they are not
 output.
 
+> `DEMO_ALIASES` is the **pack-static** default (`octocat` → "The Octocat"). The engine's `/alias` command
+> lets a user set per-chat display-name aliases at runtime (`/alias @user Name`; bare `/alias` lists them;
+> `/alias del @user` removes one); the name resolvers merge those **over** `DEMO_ALIASES`, so a runtime
+> alias also fixes the `[from:Name]` history tag the model sees. They live in `chats.config.aliases` (a
+> reserved per-chat config key, not a `/config` scalar) — no pack code needed.
+
 ## Demo commands
 
 | Command | Args | Does |
@@ -82,7 +88,8 @@ output.
 | `/joke` | `[topic]` | tells a short, family-friendly joke (LLM), with a `joke_style` config key |
 
 The engine commands (`/help`, `/info`, `/config`, `/lang`, `/model`, `/memory`, `/summary`, `/rp`,
-`/stop`, `/resume`, hidden `/admin`) come from the engine itself. `/help` is **additive**: the engine
+`/stop`, `/resume`, `/alias`, hidden `/admin`) come from the engine itself — including `/alias`, which sets
+per-chat display-name aliases layered over this pack's `DEMO_ALIASES`. `/help` is **additive**: the engine
 renders its base command list and appends the pack's `persona_helpText` (the "Demo commands" above).
 
 ## License / use
