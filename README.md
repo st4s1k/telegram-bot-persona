@@ -19,8 +19,8 @@ typecheck/run **inside the engine tree**. Develop against an engine checkout:
 git clone https://github.com/st4s1k/telegram-bot-engine
 cd telegram-bot-engine && npm install
 
-# 2. stage this pack and run the suite (the pretest hook copies the pack into src/persona/_pack)
-cp ../telegram-bot-persona/tests/*.persona.test.mjs .claude/skills/testing-worker/
+# 2. run the suite against this pack — the pretest/precheck hook (select-persona.mjs) stages the pack's
+#    .ts + i18n/ AND its tests/*.persona.test.mjs automatically; just point PERSONA_PACK at this folder.
 PERSONA_PACK=../telegram-bot-persona npm run check   # typecheck with the pack
 PERSONA_PACK=../telegram-bot-persona npm test        # engine + demo-pack tests
 ```
@@ -30,6 +30,30 @@ language) so the localized string is stable — see `tests/demo.persona.test.mjs
 
 To ship your own bot, fork this pack, edit the files below, and point a deployment project at it via
 `PERSONA_PACK` (see the engine's README → *Deployment*).
+
+## The smallest possible pack
+
+This demo exercises **every** contract part, but they are all optional (`setPersona({})` is the neutral
+engine). The practical floor is **two files** — an `index.ts` that registers an empty pack and an
+`i18n/en.json` that overrides just the system-prompt voice:
+
+`index.ts`
+```ts
+import { setPersona } from "../registry";
+setPersona({}); // no commands / quick-replies / throws / config / state — just a voice
+```
+
+`i18n/en.json`
+```json
+{ "persona_defaultVoice": "You are a friendly assistant. Keep replies short and warm." }
+```
+
+Point `PERSONA_PACK` at that folder and the engine runs with your voice plus all its built-in commands
+(`/help`, `/config`, `/model`, `/memory`, `/summary`, `/alias`, …). Every other `persona_*` key you omit
+falls back to the engine's neutral localized default (`getPersonaTexts` → `NEUTRAL_KEYS`), so a missing
+`persona_fallbackError`/`persona_infoTitle`/`persona_helpText` is fine. Add a `commands`/`quickReplies`/
+`config`/state slice (and its `demo_*`-style i18n keys) only when you actually need one — copy the
+matching file from this demo as a template.
 
 ## What each file demonstrates
 

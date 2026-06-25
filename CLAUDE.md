@@ -78,6 +78,8 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
 ## Working on the pack
 
 Develop inside an engine checkout: point `PERSONA_PACK` here and run `npm run check` + `npm test`. The
-generate step copies the `.ts` files into `src/persona/_pack/` and discovers/merges this pack's
-`i18n/*.json` into the engine i18n; copy `tests/*.persona.test.mjs` next to the engine tests to run them.
-See the README for commands. When a test asserts exact displayed wording it pins `BOT_LANG=en`.
+generate step (`select-persona.mjs`, via the pretest/precheck hook) copies the `.ts` files into
+`src/persona/_pack/`, discovers/merges this pack's `i18n/*.json` into the engine i18n, **and auto-stages
+`tests/*.persona.test.mjs`** into the engine's test folder (clearing any previously-staged pack tests
+first) — no manual copy. See the README for commands. When a test asserts exact displayed wording it pins
+`BOT_LANG=en`.
