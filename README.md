@@ -62,7 +62,7 @@ matching file from this demo as a template.
 | `texts.ts` | non-localized identity | the wake-words array (`DEMO_WAKE_WORDS`) and the pack-static username-aliases map (`DEMO_ALIASES`) — nothing else (the engine's `/alias` layers per-chat overrides on top at runtime) |
 | `i18n/en.json` + `i18n/ru.json` | localized strings | the `persona_*` text fields (voice, `/help`, fallbacks, `/info` title) and the `demo_*` strings — config, command/status output, quick-reply responses, prompt instructions, the energy flavor — i.e. **everything** the pack produces as text |
 | `index.ts` | `setPersona` | wiring all parts together (no `localeTexts` — localized strings live in `i18n/`) |
-| `commands.ts` | `RegisteredCommand[]` | a plain command (`/dice`, `skipHistory`), a **stateful** one (`/energy`, owns a `state` slice), and an **LLM** one (`/joke`, `llm`) |
+| `commands.ts` | `RegisteredCommand[]` | a plain command (`/dice`, `skipHistory`), a **stateful** one (`/energy`, owns a `state` slice), and an **LLM** one (`/joke`, `llm`); each sets `menuDesc` (an i18n key) so it appears in Telegram's native "/" command menu |
 | `state.ts` | persona-state schema + hooks | a `PersonaStateField` (`int` 0–5) + `buildPromptLines`/`infoLines`/`adminFlags`; the level-indexed flavor is `tList(lang, "demo_energy_flavor")[level]` |
 | `prompts.ts` | command prompt builder | layering instruction lines over the engine's `assemblePrompt` (instruction text from i18n via `t()`) |
 | `quickReplies.ts` | `QuickReplyRule[]` | a `test`+`responses` rule (with `probKey`) and a `tokenTable` rule — `responses` and the `tokenTable` values are **i18n keys** |

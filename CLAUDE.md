@@ -41,7 +41,8 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
   `demo_*` keys. A missing key falls back to English (the default).
 - **`commands`** (`commands.ts`, `RegisteredCommand[]`) — `/dice` (plain, `skipHistory`), `/energy`
   (owns a `state` slice), `/joke` (`llm`). Fields: `type`, `defaultCmd`, `handler`, `llm`,
-  `skipHistory`, `state`, optional `remoteAdmin`. `/dice` resolves the roller's name via
+  `skipHistory`, `state`, `menuDesc` (i18n key → the native "/" menu entry; all three demo commands set
+  one — `demo_menu_dice`/`_energy`/`_joke`), optional `remoteAdmin`. `/dice` resolves the roller's name via
   `getUserName(ctx.msg, ctx.cfg.lang, chatAliases(ctx))` — passing `chatAliases(ctx)` (from `../../utils`)
   so a per-chat `/alias` override is honored on top of `DEMO_ALIASES`.
 - **persona-state** (`state.ts`) — `demoStateSchema` (a `PersonaStateField`) + the

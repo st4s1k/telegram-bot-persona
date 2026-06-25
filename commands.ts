@@ -21,7 +21,7 @@ import { demoStateSchema, energyLevel } from "./state";
 export const demoCommands: RegisteredCommand[] = [
   // 1) A plain, non-LLM utility command. `skipHistory` keeps its reply out of history.
   {
-    type: "dice", defaultCmd: "/dice", skipHistory: true,
+    type: "dice", defaultCmd: "/dice", skipHistory: true, menuDesc: "demo_menu_dice",
     handler: async (ctx, mode) => {
       const nums = (mode.argText || "").split(/\s+/).map(Number).filter(Number.isFinite);
       const dflt = Number(ctx.cfg.dice_max) || 100; // an int /config key — see config.ts
@@ -37,7 +37,7 @@ export const demoCommands: RegisteredCommand[] = [
   // 2) A command that OWNS per-chat state. It declares a `state` slice; the engine merges it into
   //    `personaState` and applies the default. Read with energyLevel(ctx), write with updatePersonaState.
   {
-    type: "energy", defaultCmd: "/energy", skipHistory: true,
+    type: "energy", defaultCmd: "/energy", skipHistory: true, menuDesc: "demo_menu_energy",
     state: demoStateSchema,
     handler: async (ctx, mode) => {
       const arg = (mode.argText || "").trim();
@@ -52,7 +52,7 @@ export const demoCommands: RegisteredCommand[] = [
   // 3) An LLM-backed command. `llm: true` → the engine shows a "typing…" indicator and stores the reply.
   //    The handler builds a system prompt (prompts.ts) and calls runLLMWithHistory.
   {
-    type: "joke", defaultCmd: "/joke", llm: true,
+    type: "joke", defaultCmd: "/joke", llm: true, menuDesc: "demo_menu_joke",
     handler: async (ctx, mode) => {
       const topic = (mode.argText || "").trim(); // tip: getReplySource(ctx) from ../../vision can seed from a replied-to message
       const style = String(ctx.cfg.joke_style || "classic"); // a string /config key — see config.ts
