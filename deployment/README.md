@@ -21,21 +21,22 @@ injects your pack via `PERSONA_PACK`, and `wrangler deploy`s against your own Cl
 
 ## Quick start (the one-command path)
 
-From **this `deployment/` folder**, inside your fork of a pack repo:
+From **this `deployment/` folder**, inside your fork of a pack repo — **no files to edit, just run it:**
 
 ```bash
-cp .dev.vars.example .dev.vars     # fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KEY — the ONLY required edit
-npm run setup                      # = node setup.mjs
+npm run setup                      # answer a few prompts; that's all
 ```
 
-On the first run, if you're not signed in to Cloudflare, `setup` opens **`npx wrangler login`** (a one-click
-browser "Authorize") automatically — no API token to create by hand. That's it — **you only edit
-`.dev.vars`.** `setup.mjs` fills `wrangler.jsonc` from the terminal (no hunting
-for placeholders): the bot's name/username + the worker name from **Telegram `getMe`**, `account_id` from
-**`wrangler whoami`**, the **timezone** auto-detected from your system, and the D1/KV/Vectorize ids on create.
-It also **asks** the few things it can't detect — your `@username` for `/admin`, the UI language, the timezone
-(prefilled with the detected default) — where **Enter accepts the default** (in CI / non-interactive it just
-uses the defaults). Then it does it all, **idempotently** (safe to re-run): clones the engine into `./.engine`
+`setup` **asks you in the terminal** for the two keys — the **Telegram bot token** (@BotFather) and the
+**OpenRouter API key** (openrouter.ai/keys) — writes them to `.dev.vars` itself, and **auto-generates** a
+webhook secret. If you're not signed in to Cloudflare it opens **`npx wrangler login`** (a one-click browser
+"Authorize"; no API token by hand). **You never open a file.** `setup.mjs` then fills `wrangler.jsonc` from
+the terminal (no hunting for placeholders): the bot's name/username + the worker name from **Telegram
+`getMe`**, `account_id` from **`wrangler whoami`**, the **timezone** auto-detected from your system, and the
+D1/KV/Vectorize ids on create. It also **asks** the few things it can't detect — your `@username` for
+`/admin`, the UI language, the timezone (prefilled with the detected default) — where **Enter accepts the
+default** (in CI / non-interactive it just uses the defaults / `.dev.vars`). Then it does it all,
+**idempotently** (safe to re-run): clones the engine into `./.engine`
 and stages your pack → creates D1 + KV + Vectorize → sets your secrets → applies D1 migrations →
 `wrangler deploy` → registers the Telegram webhook. When it finishes, message your bot.
 

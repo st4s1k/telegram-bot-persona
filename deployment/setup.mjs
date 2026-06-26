@@ -25,6 +25,7 @@ import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline/promises";
+import { randomBytes } from "node:crypto";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACK_DIR = join(HERE, "..");                 // the pack repo root — deployment/ lives inside it
@@ -56,15 +57,28 @@ async function ask(question, def = "") {
 const [maj, min] = process.versions.node.split(".").map(Number);
 if (maj < 22 || (maj === 22 && min < 5)) die(`Node 22.5+ required (you have ${process.versions.node}) — the engine + its setup use node:sqlite/recent APIs.`);
 
-if (!existsSync(join(HERE, ".dev.vars"))) die("No .dev.vars — copy .dev.vars.example to .dev.vars and fill your keys, then re-run.");
-const env = Object.fromEntries(
-  readFileSync(join(HERE, ".dev.vars"), "utf8").split(/\r?\n/)
-    .map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+// Secrets: load .dev.vars if it exists, and PROMPT in the terminal for anything missing — no file editing.
+// (Non-interactive / CI has no TTY, so there the keys must already be in .dev.vars or the CI secret store.)
+const DEV_VARS = join(HERE, ".dev.vars");
+const env = existsSync(DEV_VARS) ? Object.fromEntries(
+  readFileSync(DEV_VARS, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
     .map((l) => { const i = l.indexOf("="); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }),
-);
-for (const k of ["TELEGRAM_BOT_TOKEN", "OPENROUTER_API_KEY"]) {
-  if (!env[k] || env[k].includes("your-")) die(`.dev.vars: ${k} is required (get TELEGRAM_BOT_TOKEN from @BotFather, OPENROUTER_API_KEY from openrouter.ai).`);
+) : {};
+const clean = (v) => (v && !v.includes("your-")) ? v : "";   // ignore the .dev.vars.example placeholder values
+async function need(key, label, required) {
+  env[key] = clean(env[key]);
+  if (env[key]) return;
+  if (!process.stdin.isTTY) { if (required) die(`${key} is required — add it to .dev.vars (no terminal to prompt).`); return; }
+  const v = (await ask(label, "")).trim();
+  if (v) env[key] = v; else if (required) die(`${key} is required.`);
 }
+await need("TELEGRAM_BOT_TOKEN", "Telegram bot token (from @BotFather)", true);
+await need("OPENROUTER_API_KEY", "OpenRouter API key (openrouter.ai/keys)", true);
+await need("OPENROUTER_PROVISIONING_KEY", "OpenRouter provisioning key — optional, Enter to skip", false);
+// Webhook origin secret: auto-generate if absent (secure by default; the worker verifies it on every update).
+if (!clean(env.TELEGRAM_WEBHOOK_SECRET)) env.TELEGRAM_WEBHOOK_SECRET = randomBytes(16).toString("hex");
+// Persist so re-runs don't re-ask (setup writes .dev.vars for you — you never edit it).
+writeFileSync(DEV_VARS, Object.entries(env).filter(([, v]) => v).map(([k, v]) => `${k}=${v}`).join("\n") + "\n");
 
 // Ensure a modern LOCAL wrangler — otherwise `npx wrangler` from this folder picks up a stale GLOBAL
 // wrangler (1.x has no `d1`/`kv namespace` subcommands), and every step fails. devDependency in package.json.
