@@ -25,7 +25,7 @@
   "demo_preset_lively": "playful: greets, quips and fun facts on",
 
   "demo_menu_dice": "Roll a die",
-  "demo_menu_energy": "Set energy level (0–5)",
+  "demo_menu_energy": "Show / set energy level (0–5)",
   "demo_menu_joke": "Tell a joke",
 
   "demo_roll": "🎲 {0} rolls **{1}** ({2}–{3})",

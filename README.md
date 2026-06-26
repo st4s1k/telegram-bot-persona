@@ -111,8 +111,8 @@ output.
 | `/energy` | `<0-5>` | sets the bot's energy level (or shows it); stored in `personaState` |
 | `/joke` | `[topic]` | tells a short, family-friendly joke (LLM), with a `joke_style` config key |
 
-The engine commands (`/help`, `/info`, `/config`, `/lang`, `/model`, `/memory`, `/summary`, `/rp`,
-`/stop`, `/resume`, `/alias`, hidden `/admin`) come from the engine itself — including `/alias`, which sets
+The engine commands (`/start`, `/help`, `/info`, `/config`, `/lang`, `/model`, `/memory`, `/summary`,
+`/retry`, `/rp`, `/stop`, `/resume`, `/alias`, hidden `/admin`) come from the engine itself — including `/alias`, which sets
 per-chat display-name aliases layered over this pack's `DEMO_ALIASES`. `/help` is **additive**: the engine
 renders its base command list and appends the pack's `persona_helpText` (the "Demo commands" above).
 
