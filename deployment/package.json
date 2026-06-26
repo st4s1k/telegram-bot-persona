@@ -5,5 +5,8 @@
   "scripts": {
     "setup": "node setup.mjs",
     "webhook": "node setWebhook.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.102.0"
   }
 }

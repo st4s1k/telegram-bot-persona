@@ -58,6 +58,10 @@ for (const k of ["TELEGRAM_BOT_TOKEN", "OPENROUTER_API_KEY"]) {
   if (!env[k] || env[k].includes("your-")) die(`.dev.vars: ${k} is required (get TELEGRAM_BOT_TOKEN from @BotFather, OPENROUTER_API_KEY from openrouter.ai).`);
 }
 
+// Ensure a modern LOCAL wrangler — otherwise `npx wrangler` from this folder picks up a stale GLOBAL
+// wrangler (1.x has no `d1`/`kv namespace` subcommands), and every step fails. devDependency in package.json.
+if (!existsSync(join(HERE, "node_modules", "wrangler"))) { log("Installing local wrangler"); sh("npm install"); }
+
 // 2) wrangler.jsonc sanity + auth ---------------------------------------------
 let wj = readFileSync(WRANGLER, "utf8");
 const workerName = firstMatch(wj, /"name":\s*"([^"]+)"/);
@@ -98,7 +102,7 @@ const vecName = (firstMatch(wj, /"index_name":\s*"([^"]+)"/) || "").replace(/^<.
 if (wj.includes("<your-d1-database-id>")) {
   log(`Creating D1 database "${dbName}"`);
   let out = safe(`npx wrangler d1 create ${dbName}`);
-  let id = firstMatch(out, /database_id\s*[=:]\s*"?([0-9a-fA-F-]{36})/);
+  let id = firstMatch(out, /["']?database_id["']?\s*[:=]\s*["']?([0-9a-fA-F-]{36})/);
   if (!id) { id = firstMatch(safe(`npx wrangler d1 info ${dbName}`), /([0-9a-fA-F-]{36})/); } // already exists → look it up
   if (!id) die(`Couldn't get the D1 id. Run \`npx wrangler d1 create ${dbName}\` yourself and paste database_id into wrangler.jsonc.`);
   wj = wj.replace("<your-db-name>", dbName).replace("<your-d1-database-id>", id);
@@ -107,7 +111,7 @@ if (wj.includes("<your-d1-database-id>")) {
 if (wj.includes("<your-kv-namespace-id>")) {
   log("Creating KV namespace (binding KV)");
   const out = safe(`npx wrangler kv namespace create KV`);
-  const id = firstMatch(out, /id\s*[=:]\s*"?([0-9a-fA-F]{32})/);
+  const id = firstMatch(out, /["']?\bid["']?\s*[:=]\s*["']?([0-9a-fA-F]{32})/);
   if (!id) die("Couldn't get the KV id. Run `npx wrangler kv namespace create KV` yourself and paste id into wrangler.jsonc.");
   wj = wj.replace("<your-kv-namespace-id>", id);
   writeFileSync(WRANGLER, wj);
