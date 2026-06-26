@@ -62,22 +62,42 @@ for (const k of ["TELEGRAM_BOT_TOKEN", "OPENROUTER_API_KEY"]) {
 // wrangler (1.x has no `d1`/`kv namespace` subcommands), and every step fails. devDependency in package.json.
 if (!existsSync(join(HERE, "node_modules", "wrangler"))) { log("Installing local wrangler"); sh("npm install"); }
 
-// 2) wrangler.jsonc sanity + auth ---------------------------------------------
+// 2) Auto-fill wrangler.jsonc from the terminal — you only edit .dev.vars ------
+// Everything that can be resolved without you (bot name/username, worker name, account id, resource ids)
+// is filled here / on create; the only thing you must edit is .dev.vars (the two keys).
 let wj = readFileSync(WRANGLER, "utf8");
-const workerName = firstMatch(wj, /"name":\s*"([^"]+)"/);
-if (!workerName || workerName.startsWith("<")) die('Set "name" in wrangler.jsonc to your Worker name (lowercase, e.g. "my-bot").');
+const jsonStr = (v) => String(v).replace(/\\/g, "\\\\").replace(/"/g, '\\"'); // safe inside a JSON string
 
-if (wj.includes("<your-cloudflare-account-id>")) {
-  // Try to fill account_id from `wrangler whoami`; if ambiguous, ask the user to paste it.
-  let who = ""; try { who = cap("npx wrangler whoami"); } catch { die("Not authenticated. Run `npx wrangler login` (or export CLOUDFLARE_API_TOKEN) and re-run."); }
-  const acct = firstMatch(who, /([0-9a-f]{32})/i);
-  if (!acct) die("Couldn't read your account id from `wrangler whoami`. Put it into wrangler.jsonc (account_id) and re-run.");
-  wj = wj.replace("<your-cloudflare-account-id>", acct);
-  writeFileSync(WRANGLER, wj);
-  log(`account_id set to ${acct}`);
-} else {
-  try { cap("npx wrangler whoami"); } catch { die("Not authenticated. Run `npx wrangler login` (or export CLOUDFLARE_API_TOKEN) and re-run."); }
-}
+// Bot identity from Telegram getMe → BOT_NAME / BOT_USERNAME / OPENROUTER_TITLE + the derived worker name.
+let bot;
+try {
+  const r = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getMe`);
+  const d = await r.json();
+  if (!d?.ok) die(`Telegram rejected the bot token (getMe): ${d?.description || "invalid"}. Fix TELEGRAM_BOT_TOKEN in .dev.vars.`);
+  bot = d.result;
+} catch (e) { die(`Couldn't reach Telegram getMe (${e.message}). Check your network and TELEGRAM_BOT_TOKEN.`); }
+const derivedName = bot.username.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "") || "my-bot";
+
+// Fill the identity placeholders we already have BEFORE any wrangler command — wrangler rejects the
+// placeholder "name" on config load (whoami/create/deploy all read wrangler.jsonc). account_id follows whoami.
+const idFills = {
+  "<your-bot-name>": derivedName,
+  "<Your Bot>": bot.first_name,   // BOT_NAME + OPENROUTER_TITLE (both occurrences)
+  "<your_bot>": bot.username,     // BOT_USERNAME
+  "<your_username>": "",          // bot owner can't be read from the API → admins empty (add your @username to vars for /admin)
+};
+for (const [ph, val] of Object.entries(idFills)) wj = wj.split(ph).join(jsonStr(val));
+writeFileSync(WRANGLER, wj);
+
+// account_id from `wrangler whoami` (also our auth check) — wrangler.jsonc now validates (name is real).
+let who = ""; try { who = cap("npx wrangler whoami"); } catch { die("Not authenticated. Run `npx wrangler login` (or export CLOUDFLARE_API_TOKEN) and re-run."); }
+const acct = firstMatch(who, /([0-9a-f]{32})/i);
+if (!acct) die("Couldn't read your account id from `wrangler whoami`. Put account_id into wrangler.jsonc and re-run.");
+wj = wj.split("<your-cloudflare-account-id>").join(acct);
+writeFileSync(WRANGLER, wj);
+const workerName = derivedName;
+log(`Bot @${bot.username} ("${bot.first_name}") → worker "${workerName}", account ${acct}`);
+console.log("  (ADMIN_USERNAMES left empty — add your @username to wrangler.jsonc `vars` later if you want /admin.)");
 
 // Preflight: confirm the auth can actually touch D1. A bare `wrangler login` (OAuth) frequently LACKS the
 // D1 + Workers-Scripts scopes and Cloudflare answers 10000 — catch it now, with the fix, not mid-deploy.
@@ -117,8 +137,14 @@ if (wj.includes("<your-kv-namespace-id>")) {
   writeFileSync(WRANGLER, wj);
 }
 if (wj.includes("<your-vectorize-index>")) {
-  if (ragOn) { log(`Creating Vectorize index "${vecName}" (RAG is on)`); safe(`npx wrangler vectorize create ${vecName} --dimensions=1024 --metric=cosine`); }
-  wj = wj.replace("<your-vectorize-index>", vecName); // keep the binding valid even with RAG off (create later when you enable it)
+  // The template always has a VECTORIZE binding, so the index MUST exist or `wrangler deploy` rejects it —
+  // create it even when RAG is off (it just stays empty until you enable RAG). `ragOn` only gates recall.
+  log(`Creating Vectorize index "${vecName}"`);
+  const vout = safe(`npx wrangler vectorize create ${vecName} --dimensions=1024 --metric=cosine`);
+  if (AUTH_ERR.test(vout) && !/already exists/i.test(vout)) {
+    die(`Vectorize create failed (auth/scope) — your token needs Vectorize:Edit. Last output:\n${vout.slice(-400)}`);
+  }
+  wj = wj.replace("<your-vectorize-index>", vecName);
   writeFileSync(WRANGLER, wj);
 }
 
@@ -136,7 +162,9 @@ log(`Applying D1 migrations to "${dbName}"`);
 sh(`npx wrangler d1 migrations apply ${dbName} --remote`, { cwd: ENGINE_DIR });
 
 log("Deploying the worker");
-const dep = cap("npx wrangler deploy", { cwd: ENGINE_DIR });
+let dep;
+try { dep = cap("npx wrangler deploy", { cwd: ENGINE_DIR }); }
+catch (e) { die(`Deploy failed:\n${(String(e.stdout || "") + String(e.stderr || "")).slice(-900)}\nFix the issue above and re-run \`npm run setup\`.`); }
 process.stdout.write(dep);
 const url = firstMatch(dep, /(https:\/\/[^\s]+\.workers\.dev)/);
 if (!url) die("Deployed, but couldn't read the worker URL. Run `node setWebhook.mjs https://<your-worker-url>` manually.");

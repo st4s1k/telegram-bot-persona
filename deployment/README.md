@@ -23,15 +23,19 @@ injects your pack via `PERSONA_PACK`, and `wrangler deploy`s against your own Cl
 From **this `deployment/` folder**, inside your fork of a pack repo:
 
 ```bash
-cp .dev.vars.example .dev.vars     # then fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KEY
-# edit wrangler.jsonc: set "name" (your worker name) and the vars (BOT_NAME/BOT_USERNAME/BOT_LANG/admins…)
+cp .dev.vars.example .dev.vars     # fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KEY — the ONLY required edit
 npm run setup                      # = node setup.mjs
 ```
 
-`setup.mjs` then does it all, **idempotently** (safe to re-run — it redeploys and skips anything already
-made): clones the engine into `./.engine` and stages your pack → creates D1 + KV (+ Vectorize if
-`ENABLE_RAG`) and writes their ids into `wrangler.jsonc` → sets your secrets → applies D1 migrations →
-`wrangler deploy` → registers the Telegram webhook. When it finishes, message your bot.
+That's it — **you only edit `.dev.vars`.** `setup.mjs` fills the rest of `wrangler.jsonc` from the terminal
+(no hunting for placeholders): the bot's name/username + the worker name come from **Telegram `getMe`** (your
+token), `account_id` from **`wrangler whoami`**, and the D1/KV/Vectorize ids on create. It then does it all,
+**idempotently** (safe to re-run): clones the engine into `./.engine` and stages your pack → creates D1 + KV
+(+ Vectorize if `ENABLE_RAG`) → sets your secrets → applies D1 migrations → `wrangler deploy` → registers the
+Telegram webhook. When it finishes, message your bot.
+
+Optional tweaks (the defaults work as-is): edit `vars` in `wrangler.jsonc` for `BOT_LANG`, `BOT_TZ`,
+`ADMIN_USERNAMES` (left empty — add your `@username` to use `/admin`), `ENABLE_RAG`/`ENABLE_VISION`, etc.
 
 > It shells out to `npx wrangler`; wrangler's output format can shift between versions, so if a parse
 > step fails the script prints the exact manual command to run. Re-run `npm run setup` to redeploy after
