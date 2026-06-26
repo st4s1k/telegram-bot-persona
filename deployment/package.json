@@ -1,0 +1,9 @@
+{
+  "name": "bot-deployment",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "webhook": "node setWebhook.mjs"
+  }
+}

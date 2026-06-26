@@ -1,0 +1,5 @@
+# Secrets — never commit. Copy .dev.vars.example → .dev.vars and fill it.
+.dev.vars
+# Engine checkout that setup.mjs clones here.
+.engine/
+node_modules/

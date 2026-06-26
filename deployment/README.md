@@ -1,66 +1,75 @@
-# Deployment scaffold
+# Deployment scaffold — ship a bot in one command
 
 A copy-paste starting point for shipping your own bot on `telegram-bot-engine`. The engine is a
 **library — it does not deploy itself**; deployment lives in *your* pack repo, which pulls the engine,
 injects your pack via `PERSONA_PACK`, and `wrangler deploy`s against your own Cloudflare resources.
 
-Files here (copy them into your pack repo, then replace every `<PLACEHOLDER>`):
+> **"Just use it"** = a deployed bot. Telegram delivers updates to a **public HTTPS webhook**, so a bot
+> can't run on `localhost` (`wrangler dev` is local-only). The local loop is the offline test suite
+> (`npm test` in the engine); to *use* the bot you deploy it. `setup.mjs` makes that one command.
 
-| File | Goes to | What it is |
-|---|---|---|
-| `wrangler.jsonc` | your repo root | Worker config: name, account, `vars`, the `KV`/`DB`/`AI`/`VECTORIZE` bindings, crons |
-| `deploy.yml` | `.github/workflows/deploy.yml` | CI: clone engine → stage pack → gate → migrate → deploy |
-| `.dev.vars.example` | copy to `.dev.vars` (gitignored) | the Worker **secrets** (tokens) — never in `vars` |
-| `setWebhook.mjs` | run locally | register/delete the Telegram webhook (+ optional origin secret) |
+## Prerequisites (get these first)
 
-## 1. Create the Cloudflare resources (once)
+- **Node 22.5+** and **git**.
+- **Telegram bot token** — talk to [@BotFather](https://t.me/BotFather) → `/newbot`.
+- **OpenRouter API key** — [openrouter.ai/keys](https://openrouter.ai/keys). The default model is
+  `openrouter/free`, so you don't need a funded balance to get first replies.
+- **Cloudflare account** — [dash.cloudflare.com](https://dash.cloudflare.com) with **Workers** + **D1** +
+  **KV** (Vectorize + Workers AI only if you turn RAG on — it's off by default). Then authenticate wrangler:
+  `npx wrangler login` (or export `CLOUDFLARE_API_TOKEN`).
 
-```bash
-npx wrangler d1 create <your-db-name>            # → copy database_id into wrangler.jsonc
-npx wrangler kv namespace create KV              # → copy id into wrangler.jsonc
-npx wrangler vectorize create <your-index> --dimensions=1024 --metric=cosine   # only if you enable RAG
-```
+## Quick start (the one-command path)
 
-Put the returned ids into `wrangler.jsonc`. The `AI` binding needs no id. These ids point at **live data** —
-set them once and don't change them.
-
-## 2. Secrets (write-only, survive deploys)
-
-Set each secret from `.dev.vars.example` — locally a `.dev.vars` file for `wrangler dev`, in production:
+From **this `deployment/` folder**, inside your fork of a pack repo:
 
 ```bash
-npx wrangler secret put TELEGRAM_BOT_TOKEN
-npx wrangler secret put OPENROUTER_API_KEY
-# optional: OPENROUTER_PROVISIONING_KEY, TELEGRAM_WEBHOOK_SECRET
+cp .dev.vars.example .dev.vars     # then fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KEY
+# edit wrangler.jsonc: set "name" (your worker name) and the vars (BOT_NAME/BOT_USERNAME/BOT_LANG/admins…)
+npm run setup                      # = node setup.mjs
 ```
 
-Plaintext config (model, language, admins, …) goes in `wrangler.jsonc` → `vars`, **not** as secrets.
-A deploy *replaces* `vars`, so list every one you depend on; secrets are untouched by deploys.
+`setup.mjs` then does it all, **idempotently** (safe to re-run — it redeploys and skips anything already
+made): clones the engine into `./.engine` and stages your pack → creates D1 + KV (+ Vectorize if
+`ENABLE_RAG`) and writes their ids into `wrangler.jsonc` → sets your secrets → applies D1 migrations →
+`wrangler deploy` → registers the Telegram webhook. When it finishes, message your bot.
 
-## 3. CI (GitHub Actions)
+> It shells out to `npx wrangler`; wrangler's output format can shift between versions, so if a parse
+> step fails the script prints the exact manual command to run. Re-run `npm run setup` to redeploy after
+> any change.
 
-Put `deploy.yml` at `.github/workflows/deploy.yml` and set these repo secrets:
+## What's in this folder
 
-- `CLOUDFLARE_API_TOKEN` — Workers Scripts:Edit + D1:Edit (+ Vectorize/AI if RAG is on).
+| File | What it is |
+|---|---|
+| `setup.mjs` | the one-command bootstrap above (`npm run setup`) |
+| `wrangler.jsonc` | Worker config: name, account, `vars`, the `KV`/`DB`/`AI`/`VECTORIZE` bindings, crons. Fill `name`+`vars`; `setup.mjs` fills the resource ids |
+| `.dev.vars.example` | the Worker **secrets** (tokens) — copy to `.dev.vars` (gitignored) and fill |
+| `setWebhook.mjs` | register / delete the Telegram webhook (`setup.mjs` calls it; or run standalone) |
+| `deploy.yml` | optional GitHub Actions CI for ongoing deploys (see below) |
+
+`vars` (plaintext config: model, language, admins, …) live in `wrangler.jsonc` — a deploy **replaces**
+them, so list every one you rely on. **Secrets** (tokens) live in `.dev.vars` / `wrangler secret put` and
+**survive** deploys. Resource ids point at **live data** — set once, never change them.
+
+## CI for ongoing deploys (optional)
+
+`setup.mjs` is for the first deploy + manual redeploys. To auto-deploy on every push, put `deploy.yml` at
+`.github/workflows/deploy.yml` and set repo secrets:
+
+- `CLOUDFLARE_API_TOKEN` — **Workers Scripts:Edit + D1:Edit** (+ Vectorize/Workers AI **Write** if RAG is on
+  — Workers AI at Read fails the deploy because the worker binds `env.AI`).
 - `ENGINE_SSH_KEY` — a read-only deploy key for the engine repo. *(If the engine repo is public, delete the
   `ssh-key:` line in `deploy.yml`.)*
 
-A push to `main` then runs the gate **with your pack**, applies D1 migrations (before deploy — `wrangler
-deploy` does not), and deploys. Migrations are idempotent; only new `migrations/*.sql` run.
+> **Migrations run before deploy.** `wrangler deploy` alone does **not** apply D1 migrations, and deploying
+> new code against a missing column makes the worker fail to persist chat state (silently). `setup.mjs` and
+> `deploy.yml` both apply migrations first — **never run a bare `wrangler deploy`** without them.
 
-## 4. Point Telegram at the worker
-
-After the first deploy, register the webhook (use the same secret you set for `TELEGRAM_WEBHOOK_SECRET`):
-
-```bash
-TELEGRAM_BOT_TOKEN=… TELEGRAM_WEBHOOK_SECRET=… node setWebhook.mjs https://<your-worker-url>
-node setWebhook.mjs --info     # confirm
-```
-
-The native "/" command menu syncs itself on the next daily cron (or run `/admin commands` to do it now).
+> **Set `TELEGRAM_WEBHOOK_SECRET`** for any public deploy (`openssl rand -hex 32` → `.dev.vars`). Without it,
+> anyone who learns the worker URL can forge updates and impersonate an `/admin`. `setup.mjs` wires it through.
 
 ## Minimal pack
 
-You still need a pack for `PERSONA_PACK` to point at. The smallest is an `index.ts` calling
-`setPersona({})` plus an `i18n/en.json` with a `persona_defaultVoice` — see the demo pack
-([telegram-bot-persona](https://github.com/st4s1k/telegram-bot-persona)) → *The smallest possible pack*.
+You need a pack for `PERSONA_PACK` to point at. The smallest is an `index.ts` calling `setPersona({})` plus
+an `i18n/en.json` with a `persona_defaultVoice` — see this demo pack's README → *The smallest possible pack*.
+The native "/" command menu syncs itself after deploy (next daily cron) or instantly via `/admin commands`.
