@@ -14,9 +14,10 @@ injects your pack via `PERSONA_PACK`, and `wrangler deploy`s against your own Cl
 - **Telegram bot token** — talk to [@BotFather](https://t.me/BotFather) → `/newbot`.
 - **OpenRouter API key** — [openrouter.ai/keys](https://openrouter.ai/keys). The default model is
   `openrouter/free`, so you don't need a funded balance to get first replies.
-- **Cloudflare account** — [dash.cloudflare.com](https://dash.cloudflare.com) with **Workers** + **D1** +
-  **KV** (Vectorize + Workers AI only if you turn RAG on — it's off by default). Then authenticate wrangler:
-  `npx wrangler login` (or export `CLOUDFLARE_API_TOKEN`).
+- **Cloudflare account** — [dash.cloudflare.com](https://dash.cloudflare.com); the **free plan** covers
+  Workers + D1 + KV + Vectorize + Workers AI. **No hand-made API token needed** — `setup` runs
+  `npx wrangler login` for you (a one-click browser "Authorize" that grants the right scopes). *(Only for
+  headless/CI runs do you need a token — `CLOUDFLARE_API_TOKEN`; see the CI section.)*
 
 ## Quick start (the one-command path)
 
@@ -27,7 +28,9 @@ cp .dev.vars.example .dev.vars     # fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KE
 npm run setup                      # = node setup.mjs
 ```
 
-That's it — **you only edit `.dev.vars`.** `setup.mjs` fills `wrangler.jsonc` from the terminal (no hunting
+On the first run, if you're not signed in to Cloudflare, `setup` opens **`npx wrangler login`** (a one-click
+browser "Authorize") automatically — no API token to create by hand. That's it — **you only edit
+`.dev.vars`.** `setup.mjs` fills `wrangler.jsonc` from the terminal (no hunting
 for placeholders): the bot's name/username + the worker name from **Telegram `getMe`**, `account_id` from
 **`wrangler whoami`**, the **timezone** auto-detected from your system, and the D1/KV/Vectorize ids on create.
 It also **asks** the few things it can't detect — your `@username` for `/admin`, the UI language, the timezone

@@ -105,25 +105,25 @@ for (const [ph, val] of Object.entries(idFills)) wj = wj.split(ph).join(jsonStr(
 wj = wj.replace('"BOT_LANG": "en"', `"BOT_LANG": "${jsonStr(botLang)}"`).replace('"BOT_TZ": "UTC"', `"BOT_TZ": "${jsonStr(botTz)}"`);
 writeFileSync(WRANGLER, wj);
 
-// account_id from `wrangler whoami` (also our auth check) — wrangler.jsonc now validates (name is real).
-let who = ""; try { who = cap("npx wrangler whoami"); } catch { die("Not authenticated. Run `npx wrangler login` (or export CLOUDFLARE_API_TOKEN) and re-run."); }
+// Auth: `wrangler login` (OAuth — a one-click browser "Authorize"; NO hand-made API token needed). If not
+// logged in and a terminal is available, we run login automatically; in CI / non-interactive, use a token
+// (set CLOUDFLARE_API_TOKEN). account_id is then read from whoami.
+let who;
+try { who = cap("npx wrangler whoami"); }
+catch {
+  if (!process.stdin.isTTY) die("Not authenticated. Run `npx wrangler login` once locally, or set CLOUDFLARE_API_TOKEN (e.g. in CI).");
+  log("Not logged in to Cloudflare — running `wrangler login` (a browser tab opens; click Authorize)…");
+  sh("npx wrangler login");
+  who = cap("npx wrangler whoami");
+}
 const acct = firstMatch(who, /([0-9a-f]{32})/i);
-if (!acct) die("Couldn't read your account id from `wrangler whoami`. Put account_id into wrangler.jsonc and re-run.");
+if (!acct) die("Couldn't read your account id from `wrangler whoami`. Set account_id in wrangler.jsonc and re-run.");
 wj = wj.split("<your-cloudflare-account-id>").join(acct);
 writeFileSync(WRANGLER, wj);
 const workerName = derivedName;
 log(`Bot @${bot.username} ("${bot.first_name}") → worker "${workerName}", account ${acct}, lang ${botLang}, tz ${botTz}`);
 if (!adminUser) console.log("  (no admin set — add ADMIN_USERNAMES to wrangler.jsonc `vars` later for /admin.)");
 if (botTz !== "UTC") console.log(`  (BOT_TZ=${botTz}; the daily-summary cron stays "0 8 * * *" UTC — adjust crons in wrangler.jsonc if you enable daily_summary.)`);
-
-// Preflight: confirm the auth can actually touch D1. A bare `wrangler login` (OAuth) frequently LACKS the
-// D1 + Workers-Scripts scopes and Cloudflare answers 10000 — catch it now, with the fix, not mid-deploy.
-if (AUTH_ERR.test(safe("npx wrangler d1 list"))) {
-  die("Cloudflare auth error (10000) on D1 — your wrangler auth lacks the required scopes.\n" +
-      "  Create an API token with ALL of these as WRITE: Workers Scripts, D1, KV, Vectorize, Workers AI\n" +
-      "  (dash.cloudflare.com → My Profile → API Tokens → Create Token → Edit Cloudflare Workers, add D1/Vectorize/AI),\n" +
-      "  then re-run with:  export CLOUDFLARE_API_TOKEN=<token>   (a plain `wrangler login` often can't create D1 / deploy).");
-}
 
 // 3) engine checkout + install (stages THIS pack via PERSONA_PACK) ------------
 if (!existsSync(ENGINE_DIR)) { log("Cloning the engine into ./.engine"); sh(`git clone --depth 1 ${ENGINE_REPO} "${ENGINE_DIR}"`); }
