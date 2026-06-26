@@ -24,6 +24,7 @@ import { execSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createInterface } from "node:readline/promises";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACK_DIR = join(HERE, "..");                 // the pack repo root — deployment/ lives inside it
@@ -43,6 +44,13 @@ function cap(cmd, opts = {}) { return execSync(cmd, { encoding: "utf8", stdio: [
 function safe(cmd) { try { return cap(cmd); } catch (e) { return String(e.stdout || "") + String(e.stderr || "") + String(e.message || ""); } }
 // Cloudflare returns this when the auth token lacks a product scope (e.g. an OAuth `wrangler login` has no D1).
 const AUTH_ERR = /code:\s*10000|Authentication error|workers\.api\.error\.unauthorized/i;
+// Prompt for a value the terminal can't auto-resolve; non-interactive (CI / no TTY) → the default. Enter → default.
+async function ask(question, def = "") {
+  if (!process.stdin.isTTY) return def;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  try { return (await rl.question(`  ${question}${def ? ` [${def}]` : ""}: `)).trim() || def; }
+  finally { rl.close(); }
+}
 
 // 1) Node + keys --------------------------------------------------------------
 const [maj, min] = process.versions.node.split(".").map(Number);
@@ -78,15 +86,23 @@ try {
 } catch (e) { die(`Couldn't reach Telegram getMe (${e.message}). Check your network and TELEGRAM_BOT_TOKEN.`); }
 const derivedName = bot.username.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "") || "my-bot";
 
-// Fill the identity placeholders we already have BEFORE any wrangler command — wrangler rejects the
-// placeholder "name" on config load (whoami/create/deploy all read wrangler.jsonc). account_id follows whoami.
+// Resolve the remaining vars from the terminal: timezone auto from the system; @username (admins) + UI
+// language asked (Enter = default; non-interactive/CI → default). Everything else uses the template defaults.
+const sysTz = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } })();
+const adminUser = (await ask("Your Telegram @username for /admin (blank = none)", "")).replace(/^@+/, "");
+const botLang = await ask("Bot UI language code (en, ru, …)", "en");
+const botTz = await ask("Timezone (IANA, e.g. Europe/Berlin)", sysTz);
+
+// Fill identity + vars BEFORE any wrangler command — wrangler rejects the placeholder "name" on config load
+// (whoami/create/deploy all read wrangler.jsonc). account_id follows whoami.
 const idFills = {
   "<your-bot-name>": derivedName,
   "<Your Bot>": bot.first_name,   // BOT_NAME + OPENROUTER_TITLE (both occurrences)
   "<your_bot>": bot.username,     // BOT_USERNAME
-  "<your_username>": "",          // bot owner can't be read from the API → admins empty (add your @username to vars for /admin)
+  "<your_username>": adminUser,   // ADMIN_USERNAMES
 };
 for (const [ph, val] of Object.entries(idFills)) wj = wj.split(ph).join(jsonStr(val));
+wj = wj.replace('"BOT_LANG": "en"', `"BOT_LANG": "${jsonStr(botLang)}"`).replace('"BOT_TZ": "UTC"', `"BOT_TZ": "${jsonStr(botTz)}"`);
 writeFileSync(WRANGLER, wj);
 
 // account_id from `wrangler whoami` (also our auth check) — wrangler.jsonc now validates (name is real).
@@ -96,8 +112,9 @@ if (!acct) die("Couldn't read your account id from `wrangler whoami`. Put accoun
 wj = wj.split("<your-cloudflare-account-id>").join(acct);
 writeFileSync(WRANGLER, wj);
 const workerName = derivedName;
-log(`Bot @${bot.username} ("${bot.first_name}") → worker "${workerName}", account ${acct}`);
-console.log("  (ADMIN_USERNAMES left empty — add your @username to wrangler.jsonc `vars` later if you want /admin.)");
+log(`Bot @${bot.username} ("${bot.first_name}") → worker "${workerName}", account ${acct}, lang ${botLang}, tz ${botTz}`);
+if (!adminUser) console.log("  (no admin set — add ADMIN_USERNAMES to wrangler.jsonc `vars` later for /admin.)");
+if (botTz !== "UTC") console.log(`  (BOT_TZ=${botTz}; the daily-summary cron stays "0 8 * * *" UTC — adjust crons in wrangler.jsonc if you enable daily_summary.)`);
 
 // Preflight: confirm the auth can actually touch D1. A bare `wrangler login` (OAuth) frequently LACKS the
 // D1 + Workers-Scripts scopes and Cloudflare answers 10000 — catch it now, with the fix, not mid-deploy.

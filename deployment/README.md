@@ -27,15 +27,17 @@ cp .dev.vars.example .dev.vars     # fill TELEGRAM_BOT_TOKEN + OPENROUTER_API_KE
 npm run setup                      # = node setup.mjs
 ```
 
-That's it — **you only edit `.dev.vars`.** `setup.mjs` fills the rest of `wrangler.jsonc` from the terminal
-(no hunting for placeholders): the bot's name/username + the worker name come from **Telegram `getMe`** (your
-token), `account_id` from **`wrangler whoami`**, and the D1/KV/Vectorize ids on create. It then does it all,
-**idempotently** (safe to re-run): clones the engine into `./.engine` and stages your pack → creates D1 + KV
-(+ Vectorize if `ENABLE_RAG`) → sets your secrets → applies D1 migrations → `wrangler deploy` → registers the
-Telegram webhook. When it finishes, message your bot.
+That's it — **you only edit `.dev.vars`.** `setup.mjs` fills `wrangler.jsonc` from the terminal (no hunting
+for placeholders): the bot's name/username + the worker name from **Telegram `getMe`**, `account_id` from
+**`wrangler whoami`**, the **timezone** auto-detected from your system, and the D1/KV/Vectorize ids on create.
+It also **asks** the few things it can't detect — your `@username` for `/admin`, the UI language, the timezone
+(prefilled with the detected default) — where **Enter accepts the default** (in CI / non-interactive it just
+uses the defaults). Then it does it all, **idempotently** (safe to re-run): clones the engine into `./.engine`
+and stages your pack → creates D1 + KV + Vectorize → sets your secrets → applies D1 migrations →
+`wrangler deploy` → registers the Telegram webhook. When it finishes, message your bot.
 
-Optional tweaks (the defaults work as-is): edit `vars` in `wrangler.jsonc` for `BOT_LANG`, `BOT_TZ`,
-`ADMIN_USERNAMES` (left empty — add your `@username` to use `/admin`), `ENABLE_RAG`/`ENABLE_VISION`, etc.
+Optional later tweaks (the defaults work): `ENABLE_RAG` / `ENABLE_VISION`, `OPENROUTER_MODEL`, the cron
+schedule, etc. in `wrangler.jsonc`.
 
 > It shells out to `npx wrangler`; wrangler's output format can shift between versions, so if a parse
 > step fails the script prints the exact manual command to run. Re-run `npm run setup` to redeploy after
