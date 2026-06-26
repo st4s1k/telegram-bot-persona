@@ -29,7 +29,9 @@ When a test asserts the exact wording of a displayed reply, it pins `BOT_LANG=en
 language) so the localized string is stable — see `tests/demo.persona.test.mjs`.
 
 To ship your own bot, fork this pack, edit the files below, and point a deployment project at it via
-`PERSONA_PACK` (see the engine's README → *Deployment*).
+`PERSONA_PACK`. A **ready-to-copy deploy scaffold** lives in [`deployment/`](deployment/) — a
+`wrangler.jsonc`, a GitHub Actions `deploy.yml` (clone engine → stage pack → gate → migrate → deploy), a
+`.dev.vars.example`, and a `setWebhook.mjs` helper, with a step-by-step README.
 
 ## The smallest possible pack
 
