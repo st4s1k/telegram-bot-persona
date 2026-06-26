@@ -39,6 +39,10 @@ const firstMatch = (s, re) => { const m = String(s).match(re); return m ? m[1] :
 function sh(cmd, opts = {}) { execSync(cmd, { stdio: "inherit", cwd: HERE, ...opts }); }
 // Captured command (returns stdout; stderr still streams). Throws on non-zero exit.
 function cap(cmd, opts = {}) { return execSync(cmd, { encoding: "utf8", stdio: ["pipe", "pipe", "inherit"], cwd: HERE, ...opts }); }
+// Captured command that never throws — returns stdout + error text. For probing / parsing wrangler output.
+function safe(cmd) { try { return cap(cmd); } catch (e) { return String(e.stdout || "") + String(e.stderr || "") + String(e.message || ""); } }
+// Cloudflare returns this when the auth token lacks a product scope (e.g. an OAuth `wrangler login` has no D1).
+const AUTH_ERR = /code:\s*10000|Authentication error|workers\.api\.error\.unauthorized/i;
 
 // 1) Node + keys --------------------------------------------------------------
 const [maj, min] = process.versions.node.split(".").map(Number);
@@ -71,6 +75,15 @@ if (wj.includes("<your-cloudflare-account-id>")) {
   try { cap("npx wrangler whoami"); } catch { die("Not authenticated. Run `npx wrangler login` (or export CLOUDFLARE_API_TOKEN) and re-run."); }
 }
 
+// Preflight: confirm the auth can actually touch D1. A bare `wrangler login` (OAuth) frequently LACKS the
+// D1 + Workers-Scripts scopes and Cloudflare answers 10000 — catch it now, with the fix, not mid-deploy.
+if (AUTH_ERR.test(safe("npx wrangler d1 list"))) {
+  die("Cloudflare auth error (10000) on D1 — your wrangler auth lacks the required scopes.\n" +
+      "  Create an API token with ALL of these as WRITE: Workers Scripts, D1, KV, Vectorize, Workers AI\n" +
+      "  (dash.cloudflare.com → My Profile → API Tokens → Create Token → Edit Cloudflare Workers, add D1/Vectorize/AI),\n" +
+      "  then re-run with:  export CLOUDFLARE_API_TOKEN=<token>   (a plain `wrangler login` often can't create D1 / deploy).");
+}
+
 // 3) engine checkout + install (stages THIS pack via PERSONA_PACK) ------------
 if (!existsSync(ENGINE_DIR)) { log("Cloning the engine into ./.engine"); sh(`git clone --depth 1 ${ENGINE_REPO} "${ENGINE_DIR}"`); }
 else { log("Updating ./.engine"); try { sh(`git -C "${ENGINE_DIR}" pull --ff-only`); } catch { /* detached/dirty — fine */ } }
@@ -81,8 +94,6 @@ sh("npm ci", { cwd: ENGINE_DIR, env: { ...process.env, PERSONA_PACK: PACK_DIR } 
 const ragOn = /"ENABLE_RAG":\s*"(?:true|1|yes|on)"/i.test(wj);
 const dbName = (firstMatch(wj, /"database_name":\s*"([^"]+)"/) || "").replace(/^<.*>$/, "") || `${workerName}-db`;
 const vecName = (firstMatch(wj, /"index_name":\s*"([^"]+)"/) || "").replace(/^<.*>$/, "") || `${workerName}-memory`;
-
-function safe(cmd) { try { return cap(cmd); } catch (e) { return String(e.stdout || "") + String(e.message || ""); } }
 
 if (wj.includes("<your-d1-database-id>")) {
   log(`Creating D1 database "${dbName}"`);
