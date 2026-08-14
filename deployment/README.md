@@ -82,4 +82,4 @@ them, so list every one you rely on. **Secrets** (tokens) live in `.dev.vars` / 
 
 You need a pack for `PERSONA_PACK` to point at. The smallest is an `index.ts` calling `setPersona({})` plus
 an `i18n/en.json` with a `persona_defaultVoice` — see this demo pack's README → *The smallest possible pack*.
-The native "/" command menu syncs itself after deploy (next daily cron) or instantly via `/admin commands`.
+The native "/" command menu syncs itself after a deploy on the **first incoming message** (or the next daily cron, whichever comes first); `/admin commands` force-syncs instantly.
