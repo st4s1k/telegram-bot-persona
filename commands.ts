@@ -7,7 +7,7 @@
 //   llm         — true → show a "typing…" indicator; the reply IS stored in history
 //   skipHistory — true → the reply is "technical" and is NOT stored in history (status/util replies)
 //   state       — this command's slice of the persona-state schema (see state.ts)
-//   remoteAdmin — (optional) allow it to be run against another chat via `/admin chat_cmd`
+//   remoteAdmin — (optional) allow it to be run against another chat via `/admin chat <id> /<command>`
 // mode.argText is the text after the command word.
 
 import type { RegisteredCommand } from "../registry";
