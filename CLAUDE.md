@@ -64,6 +64,7 @@ commands, quickReplies, randomThrows, config, buildPromptLines, infoLines, admin
   defaulted there — default it at read-time in the handler (`ctx.cfg.joke_style || "classic"`).
 - **Order matters** for `commands`/`quickReplies`/`randomThrows` (regex/quick-reply priority, weighted
   picks) and for any level-indexed content array (the `demo_energy_flavor` i18n array, index = energy level).
+- **Observability.** The engine journals every request stage in D1 (`trace_events`; read with `/admin trace [<chatId> [n] | <traceId>]` and `/admin event <id>`, purged after `TRACE_DAYS`). Pass `kind` in every `runLLMWithHistory` call (`joke`, `throw:factoid`) so the pack's LLM events show up under their own name in the metrics, and add your own stage with `traceEvent(ctx, "persona", { kind, outcome, detail })` from `../../trace` when a handler does something worth reconstructing later (the joke handler records topic + style). Best-effort, never throws.
 - **Env via cast.** Read pack env vars with `const e = env as unknown as Record<string, string | undefined>`.
   Command names are fixed (no env-based renaming).
 - **Everything localized is in i18n.** Every string the pack produces — displayed output (`/dice`,

@@ -14,7 +14,7 @@ export const demoThrows: RandomThrowKind[] = [
     handler: (ctx) => runLLMWithHistory(
       ctx.cfg,
       assemblePrompt([t(ctx.cfg.lang, "demo_factoid_prompt")], ctx),
-      ctx.chatData.history, ctx.textRaw, ctx.msg, { ctx },
+      ctx.chatData.history, ctx.textRaw, ctx.msg, { ctx, kind: "throw:factoid" },
     ),
   },
 ];

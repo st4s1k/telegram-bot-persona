@@ -15,6 +15,7 @@ import { t } from "../../i18n";
 import { getUserName, chatAliases } from "../../utils";
 import { updatePersonaState } from "../../storage";
 import { runLLMWithHistory } from "../../llm";
+import { traceEvent } from "../../trace"; // observability: a pack-side stage in the request trace (optional)
 import { buildJokePrompt } from "./prompts";
 import { demoStateSchema, energyLevel } from "./state";
 
@@ -58,13 +59,15 @@ export const demoCommands: RegisteredCommand[] = [
       const style = String(ctx.cfg.joke_style || "classic"); // a string /config key — see config.ts
       // The synthetic user-turn fed to the model is localized too (it's stored into history).
       const userMsg = topic ? t(ctx.cfg.lang, "demo_joke_user_msg", topic) : t(ctx.cfg.lang, "demo_joke_user_msg_any");
+      // Optional: a pack-side stage in the engine's request trace (`/admin trace <chatId>`); best-effort, never throws.
+      await traceEvent(ctx, "persona", { kind: "joke", detail: { topic, style } });
       return runLLMWithHistory(
         ctx.cfg,
         buildJokePrompt(topic, style, ctx),
         ctx.chatData.history,
         userMsg,
         ctx.msg,
-        { forceAppendUser: true, ctx },
+        { forceAppendUser: true, ctx, kind: "joke" }, // `kind` names this call in the trace journal / metrics
       );
     },
   },
