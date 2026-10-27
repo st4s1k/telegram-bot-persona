@@ -114,7 +114,7 @@ output.
 | `/joke` | `[topic]` | tells a short, family-friendly joke (LLM), with a `joke_style` config key |
 
 The engine commands (`/start`, `/help`, `/info`, `/config`, `/lang`, `/model`, `/memory`, `/summary`,
-`/retry`, `/rp`, `/stop`, `/resume`, `/alias`, hidden `/admin`) come from the engine itself — including `/alias`, which sets
+`/retry`, `/rp`, `/stop`, `/resume`, `/alias`, hidden `/admin` and `/leave` + its aliases) come from the engine itself — including `/alias`, which sets
 per-chat display-name aliases layered over this pack's `DEMO_ALIASES`. `/help` is **additive**: the engine
 renders its base command list and appends the pack's `persona_helpText` (the "Demo commands" above).
 
